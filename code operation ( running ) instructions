@@ -1,0 +1,13 @@
+Install Python and Required Packages
+
+1) python --version
+
+2) NAVIGATE TO PROJECT FOLDER 
+    cd ( copy path )
+3) create virtual environment (but optional)
+
+4) Install Required Libraries
+   pip install -r requirements.txt
+
+5) Start the Flask Server
+   python app.py
