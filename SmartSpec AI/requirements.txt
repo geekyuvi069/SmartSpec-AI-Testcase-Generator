@@ -1,0 +1,11 @@
+flask
+flask-cors
+torch
+PyPDF2
+transformers
+scikit-learn
+numpy
+tqdm
+
+
+

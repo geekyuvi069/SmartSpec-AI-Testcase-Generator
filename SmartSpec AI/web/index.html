@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartSpec AI - Document Understanding</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .process-step {
+      transition: all 0.3s ease;
+    }
+    .process-step.completed {
+      background-color: #d1fae5;
+      border-color: #10b981;
+    }
+    .test-case-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .test-case-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+    <!-- Header -->
+    <header class="mb-12 text-center">
+      <h1 class="text-4xl font-bold text-indigo-700 mb-2">SmartSpec AI</h1>
+      <p class="text-lg text-gray-600">Upload a document and generate test cases with AI</p>
+    </header>
+
+    <!-- Upload & Processing Section -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8 p-6">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Upload and Process Document</h2>
+      <div class="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
+        <!-- Upload Box -->
+        <div class="flex-1">
+          <div id="upload-area" class="border-2 border-dashed border-indigo-200 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-400 transition-colors">
+            <i class="fas fa-file-pdf text-4xl text-indigo-500 mb-3"></i>
+            <h3 class="text-lg font-medium text-gray-700">Upload Requirements Document</h3>
+            <p class="text-sm text-gray-500 mt-1">PDF, DOCX, or TXT</p>
+            <button id="upload-btn" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Select File</button>
+            <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt"/>
+            <p id="upload-status" class="mt-2 text-sm text-gray-600"></p>
+          </div>
+        </div>
+        <!-- Processing Steps -->
+        <div class="flex-1">
+          <div class="border border-gray-200 rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-700 mb-3">Processing Status</h3>
+            <div class="space-y-3">
+              <div class="process-step flex items-center p-3 border rounded" id="step-1">
+                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+                <span>Document uploaded</span>
+              </div>
+              <div class="process-step flex items-center p-3 border rounded" id="step-2">
+                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+                <span>Text extraction</span>
+              </div>
+              <div class="process-step flex items-center p-3 border rounded" id="step-3">
+                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+                <span>Semantic analysis</span>
+              </div>
+              <div class="process-step flex items-center p-3 border rounded" id="step-4">
+                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+                <span>Test case generation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query Section -->
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+      <label for="query-input" class="block text-sm font-medium text-gray-700 mb-1">Enter your query:</label>
+      <div class="flex">
+        <input id="query-input" type="text" placeholder="E.g., Generate test cases for login validation"
+          class="flex-1 border border-gray-300 px-4 py-2 rounded-l focus:outline-none focus:border-indigo-500"/>
+        <button id="query-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-r hover:bg-indigo-700 transition">Generate</button>
+      </div>
+      <p id="query-status" class="mt-2 text-sm text-gray-600"></p>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-container" class="hidden bg-white p-6 rounded-lg shadow">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-semibold text-gray-800">Generated Test Cases</h3>
+    <button id="download-btn" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
+      Download PDF
+    </button>
+  </div>
+  <div id="test-cases" class="space-y-4"></div>
+</div>
+
+  </div>
+  <div class="container mx-auto px-4 py-8 max-w-6xl">
+  <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+    <div class="p-6">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">How It Works</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-indigo-50 p-6 rounded-lg">
+          <div class="text-indigo-600 text-2xl mb-3">
+            <i class="fas fa-file-upload"></i>
+          </div>
+          <h3 class="font-medium text-gray-800 mb-2">1. Upload Document</h3>
+          <p class="text-gray-600">Upload your requirements document (SRS, specs, or user stories).</p>
+        </div>
+        <div class="bg-indigo-50 p-6 rounded-lg">
+          <div class="text-indigo-600 text-2xl mb-3">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h3 class="font-medium text-gray-800 mb-2">2. AI Processing</h3>
+          <p class="text-gray-600">Our system analyzes and understands the document content.</p>
+        </div>
+        <div class="bg-indigo-50 p-6 rounded-lg">
+          <div class="text-indigo-600 text-2xl mb-3">
+            <i class="fas fa-vial"></i>
+          </div>
+          <h3 class="font-medium text-gray-800 mb-2">3. Generate Tests</h3>
+          <p class="text-gray-600">Automatically creates comprehensive test cases from requirements.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <script>
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('file-input');
+    const uploadStatus = document.getElementById('upload-status');
+    const queryBtn = document.getElementById('query-btn');
+    const queryInput = document.getElementById('query-input');
+    const queryStatus = document.getElementById('query-status');
+    const resultsContainer = document.getElementById('results-container');
+    const testCasesDiv = document.getElementById('test-cases');
+    const steps = document.querySelectorAll('.process-step');
+
+    function markStepsCompleted() {
+      steps.forEach((step, index) => {
+        setTimeout(() => {
+          step.classList.add('completed');
+          step.querySelector('.step-icon').className = 'w-5 h-5 rounded-full bg-green-500 mr-3 step-icon fas fa-check';
+        }, index * 500);
+      });
+    }
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      uploadStatus.textContent = 'Uploading...';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      fetch('/upload', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            uploadStatus.textContent = 'Error: ' + data.error;
+          } else {
+            uploadStatus.textContent = `Upload complete. ${data.chunks} chunks processed.`;
+            markStepsCompleted();
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          uploadStatus.textContent = 'Upload failed.';
+        });
+    });
+
+    queryBtn.addEventListener('click', () => {
+      const query = queryInput.value.trim();
+      if (!query) {
+        queryStatus.textContent = 'Please enter a query.';
+        return;
+      }
+      queryStatus.textContent = 'Generating test cases...';
+
+      fetch('/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          queryStatus.textContent = 'Error: ' + data.error;
+          return;
+        }
+        queryStatus.textContent = '';
+        resultsContainer.classList.remove('hidden');
+        testCasesDiv.innerHTML = '';
+        data.testCases.forEach(tc => {
+          const div = document.createElement('div');
+          div.className = 'test-case-card bg-white border p-4 rounded shadow';
+          div.innerHTML = `
+            <h4 class="font-semibold text-indigo-700 mb-1">${tc.title}</h4>
+            <p class="text-gray-700 mb-2">${tc.description}</p>
+            <p class="text-sm mb-1"><strong>Steps:</strong></p>
+            <pre class="bg-gray-50 p-2 text-sm whitespace-pre-wrap mb-2">${tc.steps}</pre>
+            <p class="text-sm"><strong>Expected:</strong> ${tc.expected}</p>`;
+          testCasesDiv.appendChild(div);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        queryStatus.textContent = 'Query failed.';
+      });
+    });
+
+    queryInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') queryBtn.click();
+    });
+	document.getElementById('download-btn').addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const title = "Generated Test Cases";
+  doc.setFontSize(16);
+  doc.text(title, 10, 20);
+
+  let y = 30;
+  const testCases = document.querySelectorAll('#test-cases > div');
+
+  testCases.forEach((tc, index) => {
+    const title = tc.querySelector('h4').innerText;
+    const description = tc.querySelector('p').innerText;
+    const steps = tc.querySelector('pre').innerText;
+    const expected = tc.querySelector('p:last-of-type').innerText;
+
+    doc.setFontSize(12);
+    doc.text(`${index + 1}. ${title}`, 10, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.text(`Description: ${description}`, 12, y);
+    y += 6;
+
+    doc.text("Steps:", 12, y);
+    y += 5;
+
+    const stepsLines = doc.splitTextToSize(steps, 180);
+    doc.text(stepsLines, 14, y);
+    y += stepsLines.length * 5 + 2;
+
+    doc.text(expected, 12, y);
+    y += 10;
+
+    // Add new page if needed
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  doc.save("test-cases.pdf");
+});
+
+  </script>
+</body>
+</html>
