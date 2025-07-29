@@ -1,0 +1,801 @@
+@@ .. @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+-  <title>SmartSpec AI - Document Understanding</title>
++  <title>SmartSpec AI (SpecTacular.AI) - Intelligent Test Case Generation</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+   <style>
+     @keyframes pulse {
+       0%, 100% { opacity: 1; }
+       50% { opacity: 0.5; }
+     }
++    @keyframes slideIn {
++      from { transform: translateY(20px); opacity: 0; }
++      to { transform: translateY(0); opacity: 1; }
++    }
+     .animate-pulse {
+       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+     }
++    .animate-slide-in {
++      animation: slideIn 0.5s ease-out;
++    }
+     .process-step {
+       transition: all 0.3s ease;
+     }
+     .process-step.completed {
+       background-color: #d1fae5;
+       border-color: #10b981;
+     }
+     .test-case-card {
+       transition: transform 0.2s ease, box-shadow 0.2s ease;
+     }
+     .test-case-card:hover {
+       transform: translateY(-3px);
+       box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+     }
++    .upload-zone {
++      transition: all 0.3s ease;
++    }
++    .upload-zone.dragover {
++      background-color: #e0e7ff;
++      border-color: #4f46e5;
++      transform: scale(1.02);
++    }
++    .stats-card {
++      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
++    }
+   </style>
+ </head>
+ <body class="bg-gray-50 min-h-screen">
+   <div class="container mx-auto px-4 py-8 max-w-7xl">
+     <!-- Header -->
+     <header class="mb-12 text-center">
+-      <h1 class="text-4xl font-bold text-indigo-700 mb-2">SmartSpec AI</h1>
+-      <p class="text-lg text-gray-600">Upload a document and generate test cases with AI</p>
++      <h1 class="text-5xl font-bold text-indigo-700 mb-2">SmartSpec AI</h1>
++      <p class="text-xl text-indigo-600 font-medium mb-2">SpecTacular.AI</p>
++      <p class="text-lg text-gray-600">Transformer-based Intelligent Test Case Generation from SRS Documents</p>
++      <div class="mt-4 flex justify-center space-x-4 text-sm text-gray-500">
++        <span><i class="fas fa-robot mr-1"></i>100% Offline AI</span>
++        <span><i class="fas fa-shield-alt mr-1"></i>Secure & Private</span>
++        <span><i class="fas fa-brain mr-1"></i>Transformer Architecture</span>
++      </div>
+     </header>
+
+-    <!-- Upload & Processing Section -->
+-    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8 p-6">
+-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Upload and Process Document</h2>
+-      <div class="flex flex-col md:flex-row justify-between space-y-4 md:space-y-0 md:space-x-4">
+-        <!-- Upload Box -->
+-        <div class="flex-1">
+-          <div id="upload-area" class="border-2 border-dashed border-indigo-200 rounded-lg p-6 text-center cursor-pointer hover:border-indigo-400 transition-colors">
+-            <i class="fas fa-file-pdf text-4xl text-indigo-500 mb-3"></i>
+-            <h3 class="text-lg font-medium text-gray-700">Upload Requirements Document</h3>
+-            <p class="text-sm text-gray-500 mt-1">PDF, DOCX, or TXT</p>
+-            <button id="upload-btn" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Select File</button>
+-            <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt"/>
+-            <p id="upload-status" class="mt-2 text-sm text-gray-600"></p>
++    <!-- Dual Upload Section -->
++    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
++      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
++        <h2 class="text-2xl font-semibold mb-2">Document Upload & Processing</h2>
++        <p class="text-indigo-100">Upload your SRS document and existing test cases (optional)</p>
++      </div>
++      
++      <div class="p-6">
++        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
++          <!-- SRS Upload -->
++          <div class="space-y-4">
++            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
++              <i class="fas fa-file-pdf text-red-500 mr-2"></i>
++              SRS Document (Required)
++            </h3>
++            <div id="srs-upload-area" class="upload-zone border-2 border-dashed border-indigo-200 rounded-lg p-6 text-center cursor-pointer">
++              <i class="fas fa-cloud-upload-alt text-4xl text-indigo-500 mb-3"></i>
++              <h4 class="text-lg font-medium text-gray-700">Upload SRS Document</h4>
++              <p class="text-sm text-gray-500 mt-1">PDF format only</p>
++              <button id="srs-upload-btn" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
++                Select SRS File
++              </button>
++              <input type="file" id="srs-file-input" class="hidden" accept=".pdf"/>
++              <p id="srs-upload-status" class="mt-2 text-sm text-gray-600"></p>
++            </div>
+           </div>
+-        </div>
+-        <!-- Processing Steps -->
+-        <div class="flex-1">
+-          <div class="border border-gray-200 rounded-lg p-6">
+-            <h3 class="text-lg font-medium text-gray-700 mb-3">Processing Status</h3>
+-            <div class="space-y-3">
+-              <div class="process-step flex items-center p-3 border rounded" id="step-1">
+-                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+-                <span>Document uploaded</span>
+-              </div>
+-              <div class="process-step flex items-center p-3 border rounded" id="step-2">
+-                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+-                <span>Text extraction</span>
+-              </div>
+-              <div class="process-step flex items-center p-3 border rounded" id="step-3">
+-                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+-                <span>Semantic analysis</span>
+-              </div>
+-              <div class="process-step flex items-center p-3 border rounded" id="step-4">
+-                <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
+-                <span>Test case generation</span>
+-              </div>
++          
++          <!-- Test Cases Upload -->
++          <div class="space-y-4">
++            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
++              <i class="fas fa-vial text-green-500 mr-2"></i>
++              Existing Test Cases (Optional)
++            </h3>
++            <div id="tc-upload-area" class="upload-zone border-2 border-dashed border-green-200 rounded-lg p-6 text-center cursor-pointer">
++              <i class="fas fa-file-code text-4xl text-green-500 mb-3"></i>
++              <h4 class="text-lg font-medium text-gray-700">Upload Test Cases</h4>
++              <p class="text-sm text-gray-500 mt-1">JSON format only</p>
++              <button id="tc-upload-btn" class="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
++                Select JSON File
++              </button>
++              <input type="file" id="tc-file-input" class="hidden" accept=".json"/>
++              <p id="tc-upload-status" class="mt-2 text-sm text-gray-600"></p>
+             </div>
+           </div>
+         </div>
++        
++        <!-- Processing Status -->
++        <div class="bg-gray-50 rounded-lg p-6">
++          <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
++            <i class="fas fa-cogs text-indigo-500 mr-2"></i>
++            Processing Status
++          </h3>
++          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
++            <div class="process-step flex items-center p-3 border rounded-lg" id="step-1">
++              <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
++              <span class="text-sm">SRS Upload</span>
++            </div>
++            <div class="process-step flex items-center p-3 border rounded-lg" id="step-2">
++              <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
++              <span class="text-sm">Text Extraction</span>
++            </div>
++            <div class="process-step flex items-center p-3 border rounded-lg" id="step-3">
++              <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
++              <span class="text-sm">AI Analysis</span>
++            </div>
++            <div class="process-step flex items-center p-3 border rounded-lg" id="step-4">
++              <div class="w-5 h-5 rounded-full bg-gray-300 mr-3 step-icon"></div>
++              <span class="text-sm">Ready</span>
++            </div>
++          </div>
++        </div>
+       </div>
+     </div>
+
++    <!-- System Status -->
++    <div id="status-section" class="hidden bg-white rounded-xl shadow-lg mb-8 p-6">
++      <h3 class="text-xl font-semibold text-gray-800 mb-4">System Status</h3>
++      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
++        <div class="stats-card text-white p-4 rounded-lg">
++          <div class="flex items-center justify-between">
++            <div>
++              <p class="text-sm opacity-90">Document Chunks</p>
++              <p id="chunks-count" class="text-2xl font-bold">0</p>
++            </div>
++            <i class="fas fa-file-alt text-2xl opacity-75"></i>
++          </div>
++        </div>
++        <div class="bg-gradient-to-r from-green-500 to-teal-500 text-white p-4 rounded-lg">
++          <div class="flex items-center justify-between">
++            <div>
++              <p class="text-sm opacity-90">Existing Test Cases</p>
++              <p id="existing-tc-count" class="text-2xl font-bold">0</p>
++            </div>
++            <i class="fas fa-vial text-2xl opacity-75"></i>
++          </div>
++        </div>
++        <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-lg">
++          <div class="flex items-center justify-between">
++            <div>
++              <p class="text-sm opacity-90">New Test Cases</p>
++              <p id="new-tc-count" class="text-2xl font-bold">0</p>
++            </div>
++            <i class="fas fa-plus-circle text-2xl opacity-75"></i>
++          </div>
++        </div>
++      </div>
++    </div>
++
+     <!-- Query Section -->
+-    <div class="bg-white p-6 rounded-lg shadow mb-8">
+-      <label for="query-input" class="block text-sm font-medium text-gray-700 mb-1">Enter your query:</label>
+-      <div class="flex">
+-        <input id="query-input" type="text" placeholder="E.g., Generate test cases for login validation"
+-          class="flex-1 border border-gray-300 px-4 py-2 rounded-l focus:outline-none focus:border-indigo-500"/>
+-        <button id="query-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-r hover:bg-indigo-700 transition">Generate</button>
++    <div id="query-section" class="hidden bg-white rounded-xl shadow-lg mb-8">
++      <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
++        <h2 class="text-2xl font-semibold mb-2">AI-Powered Query Interface</h2>
++        <p class="text-purple-100">Ask questions about your requirements and get intelligent test cases</p>
++      </div>
++      
++      <div class="p-6">
++        <div class="space-y-4">
++          <div>
++            <label for="query-input" class="block text-sm font-medium text-gray-700 mb-2">
++              Enter your query about the requirements:
++            </label>
++            <div class="flex space-x-2">
++              <input id="query-input" type="text" 
++                placeholder="E.g., Generate test cases for user authentication and login validation"
++                class="flex-1 border border-gray-300 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"/>
++              <button id="query-btn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition flex items-center">
++                <i class="fas fa-magic mr-2"></i>Generate
++              </button>
++            </div>
++          </div>
++          
++          <!-- Quick Query Suggestions -->
++          <div class="flex flex-wrap gap-2">
++            <span class="text-sm text-gray-600">Quick suggestions:</span>
++            <button class="quick-query px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition"
++              data-query="Generate test cases for user authentication">Authentication</button>
++            <button class="quick-query px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition"
++              data-query="Create test cases for data validation">Validation</button>
++            <button class="quick-query px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition"
++              data-query="Generate security test cases">Security</button>
++            <button class="quick-query px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition"
++              data-query="Create performance test cases">Performance</button>
++          </div>
++        </div>
++        <p id="query-status" class="mt-4 text-sm text-gray-600"></p>
+       </div>
+-      <p id="query-status" class="mt-2 text-sm text-gray-600"></p>
+     </div>
+
+     <!-- Results Section -->
+-    <div id="results-container" class="hidden bg-white p-6 rounded-lg shadow">
+-  <div class="flex justify-between items-center mb-4">
+-    <h3 class="text-xl font-semibold text-gray-800">Generated Test Cases</h3>
+-    <button id="download-btn" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition">
+-      Download PDF
+-    </button>
+-  </div>
+-  <div id="test-cases" class="space-y-4"></div>
+-</div>
++    <div id="results-container" class="hidden bg-white rounded-xl shadow-lg">
++      <div class="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6">
++        <div class="flex justify-between items-center">
++          <div>
++            <h3 class="text-2xl font-semibold mb-2">Generated Test Cases</h3>
++            <p class="text-green-100">AI-generated test cases based on your query</p>
++          </div>
++          <div class="flex space-x-2">
++            <button id="download-json-btn" class="bg-white text-green-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center">
++              <i class="fas fa-download mr-2"></i>JSON
++            </button>
++            <button id="download-pdf-btn" class="bg-white text-green-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition flex items-center">
++              <i class="fas fa-file-pdf mr-2"></i>PDF
++            </button>
++          </div>
++        </div>
++      </div>
++      
++      <div class="p-6">
++        <div id="generation-stats" class="mb-6 p-4 bg-gray-50 rounded-lg hidden">
++          <h4 class="font-semibold text-gray-800 mb-2">Generation Statistics</h4>
++          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
++            <div>
++              <span class="text-gray-600">New Cases:</span>
++              <span id="stat-new" class="font-semibold text-green-600 ml-1">0</span>
++            </div>
++            <div>
++              <span class="text-gray-600">Duplicates Avoided:</span>
++              <span id="stat-duplicates" class="font-semibold text-orange-600 ml-1">0</span>
++            </div>
++            <div>
++              <span class="text-gray-600">Total Existing:</span>
++              <span id="stat-existing" class="font-semibold text-blue-600 ml-1">0</span>
++            </div>
++            <div>
++              <span class="text-gray-600">Search Results:</span>
++              <span id="stat-search" class="font-semibold text-purple-600 ml-1">0</span>
++            </div>
++          </div>
++        </div>
++        
++        <div id="test-cases" class="space-y-6"></div>
++      </div>
++    </div>
+
+   </div>
+-  <div class="container mx-auto px-4 py-8 max-w-6xl">
+-  <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
++  
++  <!-- How It Works Section -->
++  <div class="container mx-auto px-4 py-8 max-w-7xl">
++  <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+     <div class="p-6">
+-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">How It Works</h2>
++      <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">How SpecTacular.AI Works</h2>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+-        <div class="bg-indigo-50 p-6 rounded-lg">
+-          <div class="text-indigo-600 text-2xl mb-3">
++        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
++          <div class="text-indigo-600 text-3xl mb-4">
+             <i class="fas fa-file-upload"></i>
+           </div>
+-          <h3 class="font-medium text-gray-800 mb-2">1. Upload Document</h3>
+-          <p class="text-gray-600">Upload your requirements document (SRS, specs, or user stories).</p>
++          <h3 class="font-semibold text-gray-800 mb-3">1. Dual Upload</h3>
++          <p class="text-gray-600">Upload your SRS document (PDF) and existing test cases (JSON) for intelligent comparison and deduplication.</p>
+         </div>
+-        <div class="bg-indigo-50 p-6 rounded-lg">
+-          <div class="text-indigo-600 text-2xl mb-3">
++        <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
++          <div class="text-purple-600 text-3xl mb-4">
+             <i class="fas fa-brain"></i>
+           </div>
+-          <h3 class="font-medium text-gray-800 mb-2">2. AI Processing</h3>
+-          <p class="text-gray-600">Our system analyzes and understands the document content.</p>
++          <h3 class="font-semibold text-gray-800 mb-3">2. Transformer AI</h3>
++          <p class="text-gray-600">Advanced Transformer architecture with semantic search using FAISS for intelligent content understanding.</p>
+         </div>
+-        <div class="bg-indigo-50 p-6 rounded-lg">
+-          <div class="text-indigo-600 text-2xl mb-3">
++        <div class="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-xl border border-green-100">
++          <div class="text-green-600 text-3xl mb-4">
+             <i class="fas fa-vial"></i>
+           </div>
+-          <h3 class="font-medium text-gray-800 mb-2">3. Generate Tests</h3>
+-          <p class="text-gray-600">Automatically creates comprehensive test cases from requirements.</p>
++          <h3 class="font-semibold text-gray-800 mb-3">3. Smart Generation</h3>
++          <p class="text-gray-600">Query-based test case generation with duplicate detection and intelligent merging of new and existing cases.</p>
+         </div>
+       </div>
+     </div>
+   </div>
+ </div>
+
+
+   <script>
+-    const uploadBtn = document.getElementById('upload-btn');
+-    const fileInput = document.getElementById('file-input');
+-    const uploadStatus = document.getElementById('upload-status');
++    // SRS Upload Elements
++    const srsUploadBtn = document.getElementById('srs-upload-btn');
++    const srsFileInput = document.getElementById('srs-file-input');
++    const srsUploadStatus = document.getElementById('srs-upload-status');
++    const srsUploadArea = document.getElementById('srs-upload-area');
++    
++    // Test Cases Upload Elements
++    const tcUploadBtn = document.getElementById('tc-upload-btn');
++    const tcFileInput = document.getElementById('tc-file-input');
++    const tcUploadStatus = document.getElementById('tc-upload-status');
++    const tcUploadArea = document.getElementById('tc-upload-area');
++    
++    // Query Elements
+     const queryBtn = document.getElementById('query-btn');
+     const queryInput = document.getElementById('query-input');
+     const queryStatus = document.getElementById('query-status');
++    const querySection = document.getElementById('query-section');
++    
++    // Results Elements
+     const resultsContainer = document.getElementById('results-container');
+     const testCasesDiv = document.getElementById('test-cases');
++    const downloadJsonBtn = document.getElementById('download-json-btn');
++    const downloadPdfBtn = document.getElementById('download-pdf-btn');
++    
++    // Status Elements
++    const statusSection = document.getElementById('status-section');
+     const steps = document.querySelectorAll('.process-step');
++    
++    // State
++    let srsUploaded = false;
++    let testCasesUploaded = false;
+
+-    function markStepsCompleted() {
++    function markStepsCompleted(stepCount = 4) {
+       steps.forEach((step, index) => {
+-        setTimeout(() => {
+-          step.classList.add('completed');
+-          step.querySelector('.step-icon').className = 'w-5 h-5 rounded-full bg-green-500 mr-3 step-icon fas fa-check';
+-        }, index * 500);
++        if (index < stepCount) {
++          setTimeout(() => {
++            step.classList.add('completed');
++            const icon = step.querySelector('.step-icon');
++            icon.className = 'w-5 h-5 rounded-full bg-green-500 mr-3 step-icon';
++            icon.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
++          }, index * 300);
++        }
+       });
+     }
++    
++    function updateSystemStatus() {
++      fetch('/status')
++        .then(res => res.json())
++        .then(data => {
++          document.getElementById('chunks-count').textContent = data.document_status.chunks_loaded;
++          document.getElementById('existing-tc-count').textContent = data.test_cases_status.existing_count;
++          document.getElementById('new-tc-count').textContent = data.test_cases_status.new_count;
++          
++          if (data.document_status.chunks_loaded > 0) {
++            statusSection.classList.remove('hidden');
++            querySection.classList.remove('hidden');
++          }
++        })
++        .catch(err => console.error('Status update failed:', err));
++    }
+
+-    uploadBtn.addEventListener('click', () => fileInput.click());
++    // SRS Upload Handlers
++    srsUploadBtn.addEventListener('click', () => srsFileInput.click());
++    
++    // Drag and drop for SRS
++    srsUploadArea.addEventListener('dragover', (e) => {
++      e.preventDefault();
++      srsUploadArea.classList.add('dragover');
++    });
++    
++    srsUploadArea.addEventListener('dragleave', () => {
++      srsUploadArea.classList.remove('dragover');
++    });
++    
++    srsUploadArea.addEventListener('drop', (e) => {
++      e.preventDefault();
++      srsUploadArea.classList.remove('dragover');
++      const files = e.dataTransfer.files;
++      if (files.length > 0 && files[0].type === 'application/pdf') {
++        srsFileInput.files = files;
++        handleSrsUpload();
++      }
++    });
+
+-    fileInput.addEventListener('change', () => {
+-      if (!fileInput.files.length) return;
+-      const file = fileInput.files[0];
+-      uploadStatus.textContent = 'Uploading...';
++    srsFileInput.addEventListener('change', handleSrsUpload);
++    
++    function handleSrsUpload() {
++      if (!srsFileInput.files.length) return;
++      const file = srsFileInput.files[0];
++      srsUploadStatus.textContent = 'Processing SRS document...';
++      srsUploadStatus.className = 'mt-2 text-sm text-blue-600';
+
+       const formData = new FormData();
+       formData.append('file', file);
+
+-      fetch('/upload', { method: 'POST', body: formData })
++      fetch('/upload-srs', { method: 'POST', body: formData })
+         .then(res => res.json())
+         .then(data => {
+           if (data.error) {
+-            uploadStatus.textContent = 'Error: ' + data.error;
++            srsUploadStatus.textContent = 'Error: ' + data.error;
++            srsUploadStatus.className = 'mt-2 text-sm text-red-600';
+           } else {
+-            uploadStatus.textContent = `Upload complete. ${data.chunks} chunks processed.`;
+-            markStepsCompleted();
++            srsUploadStatus.textContent = `✅ SRS processed: ${data.chunks} chunks, ${data.metadata.requirements_count} requirements found`;
++            srsUploadStatus.className = 'mt-2 text-sm text-green-600';
++            srsUploaded = true;
++            markStepsCompleted(4);
++            updateSystemStatus();
+           }
+         })
+         .catch(err => {
+           console.error(err);
+-          uploadStatus.textContent = 'Upload failed.';
++          srsUploadStatus.textContent = 'SRS upload failed.';
++          srsUploadStatus.className = 'mt-2 text-sm text-red-600';
+         });
+-    });
++    }
++    
++    // Test Cases Upload Handlers
++    tcUploadBtn.addEventListener('click', () => tcFileInput.click());
++    
++    tcFileInput.addEventListener('change', () => {
++      if (!tcFileInput.files.length) return;
++      const file = tcFileInput.files[0];
++      tcUploadStatus.textContent = 'Loading test cases...';
++      tcUploadStatus.className = 'mt-2 text-sm text-blue-600';
++
++      const formData = new FormData();
++      formData.append('file', file);
++
++      fetch('/upload-test-cases', { method: 'POST', body: formData })
++        .then(res => res.json())
++        .then(data => {
++          if (data.error) {
++            tcUploadStatus.textContent = 'Error: ' + data.error;
++            tcUploadStatus.className = 'mt-2 text-sm text-red-600';
++          } else {
++            tcUploadStatus.textContent = `✅ ${data.existing_count} existing test cases loaded`;
++            tcUploadStatus.className = 'mt-2 text-sm text-green-600';
++            testCasesUploaded = true;
++            updateSystemStatus();
++          }
++        })
++        .catch(err => {
++          console.error(err);
++          tcUploadStatus.textContent = 'Test cases upload failed.';
++          tcUploadStatus.className = 'mt-2 text-sm text-red-600';
++        });
++    });
++    
++    // Quick query suggestions
++    document.querySelectorAll('.quick-query').forEach(btn => {
++      btn.addEventListener('click', () => {
++        queryInput.value = btn.dataset.query;
++        queryBtn.click();
++      });
++    });
+
++    // Query Handler
+     queryBtn.addEventListener('click', () => {
+       const query = queryInput.value.trim();
+       if (!query) {
+         queryStatus.textContent = 'Please enter a query.';
++        queryStatus.className = 'mt-4 text-sm text-red-600';
+         return;
+       }
+-      queryStatus.textContent = 'Generating test cases...';
++      
++      if (!srsUploaded) {
++        queryStatus.textContent = 'Please upload an SRS document first.';
++        queryStatus.className = 'mt-4 text-sm text-red-600';
++        return;
++      }
++      
++      queryStatus.textContent = '🤖 AI is analyzing requirements and generating test cases...';
++      queryStatus.className = 'mt-4 text-sm text-blue-600';
++      queryBtn.disabled = true;
++      queryBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+
+       fetch('/query', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+-        body: JSON.stringify({ query })
++        body: JSON.stringify({ query, max_test_cases: 8 })
+       })
+       .then(res => res.json())
+       .then(data => {
++        queryBtn.disabled = false;
++        queryBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate';
++        
+         if (data.error) {
+           queryStatus.textContent = 'Error: ' + data.error;
++          queryStatus.className = 'mt-4 text-sm text-red-600';
+           return;
+         }
+-        queryStatus.textContent = '';
+-        resultsContainer.classList.remove('hidden');
+-        testCasesDiv.innerHTML = '';
+-        data.testCases.forEach(tc => {
+-          const div = document.createElement('div');
+-          div.className = 'test-case-card bg-white border p-4 rounded shadow';
+-          div.innerHTML = `
+-            <h4 class="font-semibold text-indigo-700 mb-1">${tc.title}</h4>
+-            <p class="text-gray-700 mb-2">${tc.description}</p>
+-            <p class="text-sm mb-1"><strong>Steps:</strong></p>
+-            <pre class="bg-gray-50 p-2 text-sm whitespace-pre-wrap mb-2">${tc.steps}</pre>
+-            <p class="text-sm"><strong>Expected:</strong> ${tc.expected}</p>`;
+-          testCasesDiv.appendChild(div);
+-        });
++        
++        if (data.testCases.length === 0) {
++          queryStatus.textContent = 'No relevant test cases could be generated. Try a different query.';
++          queryStatus.className = 'mt-4 text-sm text-orange-600';
++          return;
++        }
++        
++        queryStatus.textContent = `✅ Generated ${data.testCases.length} test cases successfully!`;
++        queryStatus.className = 'mt-4 text-sm text-green-600';
++        
++        displayResults(data);
++        updateSystemStatus();
+       })
+       .catch(err => {
+         console.error(err);
+-        queryStatus.textContent = 'Query failed.';
++        queryBtn.disabled = false;
++        queryBtn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate';
++        queryStatus.textContent = 'Query failed. Please try again.';
++        queryStatus.className = 'mt-4 text-sm text-red-600';
+       });
+     });
++    
++    function displayResults(data) {
++      resultsContainer.classList.remove('hidden');
++      resultsContainer.classList.add('animate-slide-in');
++      
++      // Update statistics
++      if (data.stats) {
++        document.getElementById('generation-stats').classList.remove('hidden');
++        document.getElementById('stat-new').textContent = data.stats.new_cases;
++        document.getElementById('stat-duplicates').textContent = data.stats.duplicates_avoided;
++        document.getElementById('stat-existing').textContent = data.stats.total_existing;
++        document.getElementById('stat-search').textContent = data.stats.search_results;
++      }
++      
++      // Display test cases
++      testCasesDiv.innerHTML = '';
++      data.testCases.forEach((tc, index) => {
++        const div = document.createElement('div');
++        div.className = 'test-case-card bg-white border-l-4 border-indigo-500 p-6 rounded-lg shadow-md hover:shadow-lg transition-all';
++        
++        const priorityColor = {
++          'High': 'text-red-600 bg-red-100',
++          'Medium': 'text-yellow-600 bg-yellow-100',
++          'Low': 'text-green-600 bg-green-100'
++        }[tc.priority] || 'text-gray-600 bg-gray-100';
++        
++        const typeColor = {
++          'Security': 'text-purple-600 bg-purple-100',
++          'Performance': 'text-blue-600 bg-blue-100',
++          'Functional': 'text-indigo-600 bg-indigo-100',
++          'Validation': 'text-orange-600 bg-orange-100'
++        }[tc.test_type] || 'text-gray-600 bg-gray-100';
++        
++        div.innerHTML = `
++          <div class="flex justify-between items-start mb-4">
++            <h4 class="text-lg font-semibold text-gray-800 flex-1">${tc.title}</h4>
++            <div class="flex space-x-2 ml-4">
++              <span class="px-2 py-1 rounded-full text-xs font-medium ${priorityColor}">${tc.priority}</span>
++              <span class="px-2 py-1 rounded-full text-xs font-medium ${typeColor}">${tc.test_type}</span>
++            </div>
++          </div>
++          
++          <p class="text-gray-700 mb-4">${tc.description}</p>
++          
++          <div class="mb-4">
++            <h5 class="font-medium text-gray-800 mb-2">Test Steps:</h5>
++            <ol class="list-decimal list-inside space-y-1 text-sm text-gray-700 bg-gray-50 p-3 rounded">
++              ${Array.isArray(tc.steps) ? tc.steps.map(step => `<li>${step}</li>`).join('') : `<li>${tc.steps}</li>`}
++            </ol>
++          </div>
++          
++          <div class="mb-4">
++            <h5 class="font-medium text-gray-800 mb-2">Expected Result:</h5>
++            <p class="text-sm text-gray-700 bg-green-50 p-3 rounded">${tc.expected_result}</p>
++          </div>
++          
++          <div class="flex justify-between items-center text-xs text-gray-500 pt-3 border-t">
++            <span>ID: ${tc.id}</span>
++            <span>Relevance: ${Math.round((tc.relevance_score || 0) * 100)}%</span>
++          </div>
++        `;
++        testCasesDiv.appendChild(div);
++      });
++    }
+
+     queryInput.addEventListener('keypress', e => {
+       if (e.key === 'Enter') queryBtn.click();
+     });
+-	document.getElementById('download-btn').addEventListener('click', () => {
+-  const { jsPDF } = window.jspdf;
+-  const doc = new jsPDF();
+-
+-  const title = "Generated Test Cases";
+-  doc.setFontSize(16);
+-  doc.text(title, 10, 20);
+-
+-  let y = 30;
+-  const testCases = document.querySelectorAll('#test-cases > div');
+-
+-  testCases.forEach((tc, index) => {
+-    const title = tc.querySelector('h4').innerText;
+-    const description = tc.querySelector('p').innerText;
+-    const steps = tc.querySelector('pre').innerText;
+-    const expected = tc.querySelector('p:last-of-type').innerText;
+-
+-    doc.setFontSize(12);
+-    doc.text(`${index + 1}. ${title}`, 10, y);
+-    y += 7;
+-
+-    doc.setFontSize(10);
+-    doc.text(`Description: ${description}`, 12, y);
+-    y += 6;
+-
+-    doc.text("Steps:", 12, y);
+-    y += 5;
+-
+-    const stepsLines = doc.splitTextToSize(steps, 180);
+-    doc.text(stepsLines, 14, y);
+-    y += stepsLines.length * 5 + 2;
+-
+-    doc.text(expected, 12, y);
+-    y += 10;
+-
+-    // Add new page if needed
+-    if (y > 270) {
+-      doc.addPage();
+-      y = 20;
+-    }
+-  });
+-
+-  doc.save("test-cases.pdf");
+-});
++    
++    // Download Handlers
++    downloadJsonBtn.addEventListener('click', () => {
++      fetch('/download-test-cases')
++        .then(res => res.json())
++        .then(data => {
++          if (data.error) {
++            alert('Error: ' + data.error);
++            return;
++          }
++          // Download the file
++          window.open(`/download-file/${data.filename}`, '_blank');
++        })
++        .catch(err => {
++          console.error(err);
++          alert('Download failed.');
++        });
++    });
++    
++    downloadPdfBtn.addEventListener('click', () => {
++      const { jsPDF } = window.jspdf;
++      const doc = new jsPDF();
++
++      const title = "SmartSpec AI - Generated Test Cases";
++      doc.setFontSize(18);
++      doc.text(title, 10, 20);
++      
++      doc.setFontSize(10);
++      doc.text(`Generated on: ${new Date().toLocaleString()}`, 10, 30);
++
++      let y = 45;
++      const testCases = document.querySelectorAll('#test-cases > div');
++
++      testCases.forEach((tc, index) => {
++        const title = tc.querySelector('h4').innerText;
++        const description = tc.querySelector('p').innerText;
++        const steps = tc.querySelector('ol').innerText;
++        const expected = tc.querySelectorAll('p')[2].innerText;
++
++        doc.setFontSize(14);
++        doc.text(`${index + 1}. ${title}`, 10, y);
++        y += 8;
++
++        doc.setFontSize(10);
++        const descLines = doc.splitTextToSize(`Description: ${description}`, 180);
++        doc.text(descLines, 12, y);
++        y += descLines.length * 5 + 3;
++
++        doc.text("Test Steps:", 12, y);
++        y += 5;
++
++        const stepsLines = doc.splitTextToSize(steps, 170);
++        doc.text(stepsLines, 14, y);
++        y += stepsLines.length * 4 + 3;
++
++        const expectedLines = doc.splitTextToSize(`Expected: ${expected}`, 180);
++        doc.text(expectedLines, 12, y);
++        y += expectedLines.length * 4 + 8;
++
++        // Add new page if needed
++        if (y > 270) {
++          doc.addPage();
++          y = 20;
++        }
++      });
++
++      doc.save("smartspec-ai-test-cases.pdf");
++    });
++    
++    // Initialize
++    updateSystemStatus();
+
+   </script>
+ </body>
+ </html>
